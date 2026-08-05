@@ -1,0 +1,28 @@
+/* ==========================================================================
+   signup.css — Signup page
+   ========================================================================== */
+
+.auth-card--wide { max-width: 440px; }
+
+.signup-steps {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
+}
+.signup-step-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--color-border-strong);
+}
+.signup-step-dot.active { background: var(--color-primary); width: 24px; border-radius: var(--radius-full); transition: all var(--duration-fast); }
+
+.terms-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--fs-xs);
+  color: var(--color-muted);
+  margin-bottom: var(--space-6);
+}
+.terms-row input { margin-top: 3px; }

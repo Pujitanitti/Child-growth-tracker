@@ -1,0 +1,40 @@
+{
+  "_readme": "This is a static illustration of the data the seed script (backend/utils/seed.js, run via `npm run seed`) creates in MongoDB. It is not loaded directly by the app — it exists so you can inspect the data shape without standing up a database first.",
+  "users": [
+    { "name": "Admin User", "email": "admin@growthtracker.app", "password": "Admin@1234", "role": "admin" },
+    { "name": "Asha Verma", "email": "parent@growthtracker.app", "password": "Parent@1234", "role": "parent" }
+  ],
+  "children": [
+    {
+      "name": "Aarav Verma",
+      "gender": "male",
+      "dateOfBirth": "2023-08-01",
+      "bloodGroup": "B+",
+      "emergencyContact": { "name": "Rohan Verma", "relationship": "Father", "phone": "+91-9000000000" },
+      "doctor": { "name": "Dr. Kavita Rao", "clinic": "Sunrise Pediatrics", "phone": "+91-9111111111" }
+    },
+    {
+      "name": "Diya Verma",
+      "gender": "female",
+      "dateOfBirth": "2026-01-15",
+      "bloodGroup": "O+",
+      "emergencyContact": { "name": "Rohan Verma", "relationship": "Father", "phone": "+91-9000000000" },
+      "doctor": { "name": "Dr. Kavita Rao", "clinic": "Sunrise Pediatrics", "phone": "+91-9111111111" }
+    }
+  ],
+  "growthRecordsSample": [
+    { "date": "2026-02-01", "heightCm": 52.1, "weightKg": 3.8, "headCircumferenceCm": 35.3 },
+    { "date": "2026-03-01", "heightCm": 56.4, "weightKg": 4.6, "headCircumferenceCm": 36.0 },
+    { "date": "2026-04-01", "heightCm": 59.8, "weightKg": 5.3, "headCircumferenceCm": 36.8 }
+  ],
+  "vaccinationScheduleSample": [
+    { "vaccine": "BCG", "doseLabel": "Birth dose", "dueDay": 0 },
+    { "vaccine": "OPV - Dose 1", "doseLabel": "6 weeks", "dueDay": 42 },
+    { "vaccine": "MMR - Dose 1", "doseLabel": "9 months", "dueDay": 270 }
+  ],
+  "milestoneLibrarySample": [
+    { "domain": "Motor Skills", "title": "Holds head up", "ageMonths": 3 },
+    { "domain": "Language", "title": "Says first word", "ageMonths": 12 },
+    { "domain": "Social Skills", "title": "Social smile", "ageMonths": 2 }
+  ]
+}

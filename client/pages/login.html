@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log In · Child Growth Tracker</title>
+<meta name="description" content="Log in to track your child's growth, vaccinations, milestones, and more.">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="../css/variables.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/layout.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/forms.css">
+<link rel="stylesheet" href="../css/animations.css">
+<link rel="stylesheet" href="../css/themes.css">
+<link rel="stylesheet" href="../css/responsive.css">
+<link rel="stylesheet" href="../css/utilities.css">
+<link rel="stylesheet" href="../css/pages/login.css">
+<script>
+  // Applied before first paint to avoid a flash of the wrong theme.
+  (function () {
+    var saved = localStorage.getItem('cgt_theme');
+    if (saved) document.documentElement.setAttribute('data-theme', saved);
+    else if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.setAttribute('data-theme', 'dark');
+  })();
+</script>
+</head>
+<body>
+  <div class="auth-shell">
+    <section class="auth-shell__panel">
+      <div class="auth-shell__panel-content">
+        <div class="flex items-center gap-3 mb-6">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="20" cy="20" r="19" fill="rgba(255,255,255,0.15)"/>
+            <path d="M6 26 L14 18 L19 23 L26 12 L34 20" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+          <span style="font-family:var(--font-display); font-weight:600; font-size:1.25rem; color:#fff;">GrowthTracker</span>
+        </div>
+        <h1 class="auth-shell__panel-title">Every milestone,<br>beautifully tracked.</h1>
+        <p class="auth-shell__panel-text">Height, weight, vaccinations, sleep, and nutrition — all in one calm, clear dashboard built for parents.</p>
+        <div class="auth-shell__panel-stats">
+          <div><div class="auth-shell__panel-stat-value">12+</div><div class="auth-shell__panel-stat-label">Growth metrics tracked</div></div>
+          <div><div class="auth-shell__panel-stat-value">100%</div><div class="auth-shell__panel-stat-label">Private &amp; secure</div></div>
+        </div>
+      </div>
+      <svg class="auth-shell__panel-curve" viewBox="0 0 320 160" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M0 140 Q60 100 100 110 T200 60 T320 20" stroke="#fff" stroke-width="3" fill="none"/>
+      </svg>
+    </section>
+
+    <section class="auth-shell__form">
+      <div class="auth-card animate-fade-in-up">
+        <h2 class="auth-card__title">Welcome back</h2>
+        <p class="auth-card__subtitle">Log in to your account to continue.</p>
+
+        <div id="expiredNotice" class="card mb-5 hidden" style="border-left:4px solid var(--color-warning); background:var(--color-warning-soft);">
+          <span class="text-sm">Your session expired. Please log in again.</span>
+        </div>
+
+        <form id="loginForm" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="email">Email address<span class="required">*</span></label>
+            <input class="input" type="email" id="email" autocomplete="email" required>
+            <div class="form-error hidden" id="err-email"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="password">Password<span class="required">*</span></label>
+            <div class="input-group">
+              <input class="input" type="password" id="password" autocomplete="current-password" required style="padding-left:var(--space-4);">
+              <button type="button" class="input-group__action" id="togglePassword" aria-label="Show password"><i class="fa-solid fa-eye"></i></button>
+            </div>
+            <div class="form-error hidden" id="err-password"></div>
+          </div>
+          <div class="remember-row">
+            <label class="checkbox-row"><input type="checkbox" id="remember"><span>Remember me</span></label>
+            <a href="/pages/forgot-password.html" class="text-sm">Forgot password?</a>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block btn-lg" id="loginBtn">Log In</button>
+        </form>
+
+        <p class="auth-card__footer">Don't have an account? <a href="/pages/signup.html">Sign up free</a></p>
+      </div>
+    </section>
+  </div>
+
+  <script type="module">
+    import { login, redirectIfAuthenticated } from '../js/auth.js';
+    import { showToast } from '../js/components/toast.js';
+    import { validateForm, rules } from '../js/validators.js';
+
+    redirectIfAuthenticated();
+
+    if (new URLSearchParams(window.location.search).get('expired')) {
+      document.getElementById('expiredNotice').classList.remove('hidden');
+    }
+
+    document.getElementById('togglePassword').addEventListener('click', (e) => {
+      const input = document.getElementById('password');
+      const isPassword = input.type === 'password';
+      input.type = isPassword ? 'text' : 'password';
+      e.currentTarget.querySelector('i').className = `fa-solid ${isPassword ? 'fa-eye-slash' : 'fa-eye'}`;
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      const errors = validateForm({ email, password }, {
+        email: [rules.email],
+        password: [(v) => rules.required(v, 'Password')],
+      });
+      document.querySelectorAll('.form-error').forEach((el) => el.classList.add('hidden'));
+      if (Object.keys(errors).length) {
+        Object.entries(errors).forEach(([field, msg]) => {
+          const el = document.getElementById(`err-${field}`);
+          el.textContent = msg; el.classList.remove('hidden');
+        });
+        return;
+      }
+
+      const btn = document.getElementById('loginBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>';
+
+      try {
+        await login(email, password);
+        window.location.href = '/pages/dashboard.html';
+      } catch (err) {
+        showToast(err.message, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Log In';
+      }
+    });
+  </script>
+</body>
+</html>

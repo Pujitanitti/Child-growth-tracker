@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel · Child Growth Tracker</title>
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="../css/variables.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/layout.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/forms.css">
+<link rel="stylesheet" href="../css/tables.css">
+<link rel="stylesheet" href="../css/animations.css">
+<link rel="stylesheet" href="../css/themes.css">
+<link rel="stylesheet" href="../css/responsive.css">
+<link rel="stylesheet" href="../css/utilities.css">
+<script>
+  (function () {
+    var saved = localStorage.getItem('cgt_theme');
+    if (saved) document.documentElement.setAttribute('data-theme', saved);
+    else if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.setAttribute('data-theme', 'dark');
+  })();
+</script>
+</head>
+<body>
+  <div class="app-shell">
+    <div id="sidebar-root"></div>
+    <div>
+      <div id="topbar-root"></div>
+      <main class="main-content">
+        <div class="breadcrumbs"><a href="/pages/dashboard.html">Home</a> <span class="breadcrumbs__sep">/</span> <span>Admin Panel</span></div>
+        <div class="page-header"><h1 class="page-header__title">Admin Panel</h1></div>
+
+        <div class="grid grid-cols-4 mb-6" id="analyticsCards"></div>
+
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="users">Manage Users</button>
+          <button class="tab-btn" data-tab="audit">Activity Logs</button>
+        </div>
+
+        <div class="tab-panel" data-panel="users">
+          <div class="flex justify-between items-center mb-4 flex-wrap gap-3">
+            <div class="input-group" style="max-width:280px;">
+              <i class="fa-solid fa-magnifying-glass input-group__icon"></i>
+              <input class="input" id="userSearch" placeholder="Search users...">
+            </div>
+            <select class="select" id="roleFilter" style="max-width:160px;">
+              <option value="">All roles</option>
+              <option value="parent">Parent</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th class="sortable" data-sort="name">Name <i class="fa-solid fa-sort"></i></th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th class="sortable" data-sort="createdAt">Joined <i class="fa-solid fa-sort"></i></th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="usersBody"></tbody>
+            </table>
+            <div class="pagination" id="usersPagination"></div>
+          </div>
+        </div>
+
+        <div class="tab-panel hidden" data-panel="audit">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>User</th><th>Action</th><th>Entity</th><th>Time</th></tr></thead>
+              <tbody id="auditBody"></tbody>
+            </table>
+            <div class="pagination" id="auditPagination"></div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initApp } from '../js/app.js';
+    import { initTabs } from '../js/components/tabs.js';
+    import { api } from '../js/api.js';
+    import { showToast } from '../js/components/toast.js';
+    import { renderSkeletonRows } from '../js/components/loader.js';
+    import { formatDate, timeAgo, debounce } from '../js/utils.js';
+
+    const user = await initApp('admin');
+    if (!user) throw new Error('unauthenticated');
+    if (user.role !== 'admin') {
+      document.querySelector('.main-content').innerHTML = '<div class="empty-state"><h3>Access denied</h3><p>This page is for administrators only.</p></div>';
+      throw new Error('forbidden');
+    }
+
+    let userPage = 1;
+    let auditPage = 1;
+    let sortBy = 'createdAt';
+    let sortOrder = 'desc';
+
+    async function loadAnalytics() {
+      const res = await api.get('/admin/analytics');
+      const a = res.data;
+      document.getElementById('analyticsCards').innerHTML = `
+        <div class="card stat-card tilt-card"><div class="stat-card__icon"><i class="fa-solid fa-users"></i></div><div class="stat-card__value">${a.totalUsers}</div><div class="stat-card__label">Total Users</div></div>
+        <div class="card stat-card tilt-card"><div class="stat-card__icon accent"><i class="fa-solid fa-child"></i></div><div class="stat-card__value">${a.totalChildren}</div><div class="stat-card__label">Total Children</div></div>
+        <div class="card stat-card tilt-card"><div class="stat-card__icon info"><i class="fa-solid fa-ruler-vertical"></i></div><div class="stat-card__value">${a.totalGrowthRecords}</div><div class="stat-card__label">Growth Records</div></div>
+        <div class="card stat-card tilt-card"><div class="stat-card__icon warning"><i class="fa-solid fa-syringe"></i></div><div class="stat-card__value">${a.upcomingVaccinations}</div><div class="stat-card__label">Upcoming Vaccinations</div></div>
+      `;
+    }
+
+    async function loadUsers() {
+      const tbody = document.getElementById('usersBody');
+      renderSkeletonRows(tbody, 5, 6);
+
+      const params = new URLSearchParams({
+        page: userPage, limit: 10, sortBy, sortOrder,
+        ...(document.getElementById('userSearch').value ? { search: document.getElementById('userSearch').value } : {}),
+        ...(document.getElementById('roleFilter').value ? { role: document.getElementById('roleFilter').value } : {}),
+      });
+      const res = await api.get(`/admin/users?${params}`);
+      const { users, pagination } = res.data;
+
+      tbody.innerHTML = users.length ? users.map((u) => `
+        <tr>
+          <td data-label="Name" class="cell-primary">${u.name}</td>
+          <td data-label="Email">${u.email}</td>
+          <td data-label="Role"><span class="badge badge-neutral">${u.role}</span></td>
+          <td data-label="Status"><span class="badge ${u.isActive ? 'badge-success' : 'badge-danger'}">${u.isActive ? 'Active' : 'Deactivated'}</span></td>
+          <td data-label="Joined">${formatDate(u.createdAt)}</td>
+          <td data-label="Actions" class="cell-actions">
+            <button class="btn btn-sm btn-secondary" data-toggle="${u._id}" data-active="${u.isActive}">${u.isActive ? 'Deactivate' : 'Activate'}</button>
+          </td>
+        </tr>
+      `).join('') : '<tr><td colspan="6" class="text-center text-muted">No users found.</td></tr>';
+
+      renderPagination('usersPagination', pagination, (p) => { userPage = p; loadUsers(); });
+
+      tbody.querySelectorAll('[data-toggle]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const isActive = btn.dataset.active === 'true';
+          await api.patch(`/admin/users/${btn.dataset.toggle}`, { isActive: !isActive });
+          showToast(`User ${isActive ? 'deactivated' : 'activated'}`, 'success');
+          loadUsers();
+        });
+      });
+    }
+
+    async function loadAuditLogs() {
+      const tbody = document.getElementById('auditBody');
+      renderSkeletonRows(tbody, 5, 4);
+      const res = await api.get(`/admin/audit-logs?page=${auditPage}&limit=15`);
+      const { logs, pagination } = res.data;
+      tbody.innerHTML = logs.length ? logs.map((l) => `
+        <tr>
+          <td data-label="User">${l.user?.name || 'System'}</td>
+          <td data-label="Action"><span class="badge badge-neutral">${l.action}</span></td>
+          <td data-label="Entity">${l.entityType || '—'}</td>
+          <td data-label="Time">${timeAgo(l.createdAt)}</td>
+        </tr>
+      `).join('') : '<tr><td colspan="4" class="text-center text-muted">No activity yet.</td></tr>';
+      renderPagination('auditPagination', pagination, (p) => { auditPage = p; loadAuditLogs(); });
+    }
+
+    function renderPagination(elId, pagination, onPage) {
+      const el = document.getElementById(elId);
+      el.innerHTML = `
+        <span>Page ${pagination.page} of ${Math.max(pagination.pages, 1)} · ${pagination.total} total</span>
+        <div class="pagination__controls">
+          <button class="pagination__btn" id="${elId}-prev" aria-label="Previous page" ${pagination.page <= 1 ? 'disabled' : ''}><i class="fa-solid fa-chevron-left"></i></button>
+          <button class="pagination__btn" id="${elId}-next" aria-label="Next page" ${pagination.page >= pagination.pages ? 'disabled' : ''}><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+      `;
+      document.getElementById(`${elId}-prev`)?.addEventListener('click', () => onPage(pagination.page - 1));
+      document.getElementById(`${elId}-next`)?.addEventListener('click', () => onPage(pagination.page + 1));
+    }
+
+    initTabs(document.querySelector('.tabs'), document.querySelector('.main-content'), {
+      onActivate: async (tab) => {
+        if (tab === 'users') await loadUsers();
+        if (tab === 'audit') await loadAuditLogs();
+      },
+    });
+
+    document.querySelectorAll('th.sortable').forEach((th) => {
+      th.addEventListener('click', () => {
+        const field = th.dataset.sort;
+        sortOrder = sortBy === field && sortOrder === 'asc' ? 'desc' : 'asc';
+        sortBy = field;
+        loadUsers();
+      });
+    });
+
+    document.getElementById('userSearch').addEventListener('input', debounce(() => { userPage = 1; loadUsers(); }, 350));
+    document.getElementById('roleFilter').addEventListener('change', () => { userPage = 1; loadUsers(); });
+
+    await loadAnalytics();
+  </script>
+</body>
+</html>

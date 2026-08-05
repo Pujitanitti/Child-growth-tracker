@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Page Not Found · Child Growth Tracker</title>
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="../css/variables.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/animations.css">
+<link rel="stylesheet" href="../css/utilities.css">
+<script>
+  (function () {
+    var saved = localStorage.getItem('cgt_theme');
+    if (saved) document.documentElement.setAttribute('data-theme', saved);
+  })();
+</script>
+<style>
+  body { min-height:100vh; display:flex; align-items:center; justify-content:center; text-align:center; padding: var(--space-6); }
+  .code { font-family:var(--font-display); font-size:6rem; font-weight:700; color:var(--color-primary); line-height:1; }
+</style>
+</head>
+<body>
+  <div class="animate-fade-in-up">
+    <svg width="120" height="60" viewBox="0 0 260 140" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="margin: 0 auto var(--space-4);">
+      <path d="M0 120 Q50 90 80 100 T160 50 T260 10" stroke="var(--color-primary-soft)" stroke-width="4" fill="none"/>
+    </svg>
+    <div class="code">404</div>
+    <h2 class="mt-3">Page not found</h2>
+    <p class="text-muted mb-5">The page you're looking for wandered off the growth chart.</p>
+    <a href="/pages/dashboard.html" class="btn btn-primary">Back to Dashboard</a>
+  </div>
+</body>
+</html>

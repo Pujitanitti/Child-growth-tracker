@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+package-lock.json.bak
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+backend/.env
+
+# Uploaded files (user content, not source)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+
+# Test coverage
+coverage/
+
+# Misc backups made during local troubleshooting
+*.backup
+*.bak

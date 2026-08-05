@@ -1,0 +1,36 @@
+/* ==========================================================================
+   themes.css — Theme-specific visual adjustments beyond color tokens
+   ========================================================================== */
+
+/* Most theming is handled by variables.css custom properties. This file
+   covers the handful of things that need more than a color swap. */
+
+[data-theme='dark'] .card,
+[data-theme='dark'] .modal,
+[data-theme='dark'] .table-wrap {
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme='dark'] .auth-shell__panel {
+  background: linear-gradient(160deg, #0E1613, var(--color-primary-dark));
+}
+
+[data-theme='dark'] .skeleton {
+  background: linear-gradient(90deg, var(--color-border) 25%, var(--color-primary-softer) 50%, var(--color-border) 75%);
+  background-size: 200% 100%;
+}
+
+[data-theme='dark'] .select {
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238FA39B' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+}
+
+/* Theme toggle control shown in the topbar */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.theme-toggle i { font-size: 0.9rem; color: var(--color-muted); }
+
+/* Chart.js canvases inherit grid/tick colors via JS reading these vars at
+   render time (see theme.js), so no direct override is needed here. */

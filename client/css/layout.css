@@ -1,0 +1,247 @@
+/* ==========================================================================
+   layout.css — App shell: sidebar, topbar, content grid
+   ========================================================================== */
+
+.app-shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) 1fr;
+  min-height: 100vh;
+  transition: grid-template-columns var(--duration-base) var(--ease-standard);
+}
+
+.app-shell.sidebar-collapsed {
+  grid-template-columns: var(--sidebar-width-collapsed) 1fr;
+}
+
+/* --- Sidebar ---------------------------------------------------------------- */
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  z-index: var(--z-sidebar);
+  overflow-x: hidden;
+}
+
+.sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-5);
+  min-height: var(--topbar-height);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sidebar__brand-mark {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+}
+
+.sidebar__brand-name {
+  font-family: var(--font-display);
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-md);
+  white-space: nowrap;
+  color: var(--color-ink);
+}
+
+.app-shell.sidebar-collapsed .sidebar__brand-name,
+.app-shell.sidebar-collapsed .nav-link__label,
+.app-shell.sidebar-collapsed .sidebar__section-label {
+  display: none;
+}
+
+.sidebar__nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-4) var(--space-3);
+}
+
+.sidebar__section-label {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted-soft);
+  padding: var(--space-4) var(--space-3) var(--space-2);
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--color-ink-soft);
+  font-weight: var(--fw-medium);
+  font-size: var(--fs-sm);
+  margin-bottom: var(--space-1);
+  transition: background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast);
+  white-space: nowrap;
+}
+
+.nav-link i { width: 20px; text-align: center; font-size: 1rem; flex-shrink: 0; }
+
+.nav-link:hover {
+  background: var(--color-primary-softer);
+  color: var(--color-primary-dark);
+  text-decoration: none;
+}
+
+.nav-link.active {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-dark);
+  font-weight: var(--fw-semibold);
+}
+
+.sidebar__footer {
+  padding: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.sidebar__collapse-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  color: var(--color-muted);
+}
+.sidebar__collapse-btn:hover { background: var(--color-primary-softer); }
+
+/* --- Topbar ------------------------------------------------------------------ */
+.topbar {
+  position: sticky;
+  top: 0;
+  height: var(--topbar-height);
+  background: var(--color-surface-glass);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-6);
+  z-index: var(--z-topbar);
+  gap: var(--space-4);
+}
+
+.topbar__search {
+  flex: 1;
+  max-width: 420px;
+}
+
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.icon-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  color: var(--color-ink-soft);
+  transition: background-color var(--duration-fast);
+}
+.icon-btn:hover { background: var(--color-primary-softer); color: var(--color-primary-dark); }
+
+.icon-btn__badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  border: 2px solid var(--color-surface);
+}
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-1);
+  border-radius: var(--radius-full);
+  transition: background-color var(--duration-fast);
+}
+.user-menu:hover { background: var(--color-primary-softer); }
+
+.user-menu__avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--color-primary-soft);
+}
+
+/* --- Main content ------------------------------------------------------------ */
+.main-content {
+  padding: var(--space-6) var(--space-6) var(--space-12);
+  max-width: var(--content-max-width);
+  width: 100%;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.page-header__title { margin-bottom: var(--space-1); }
+.page-header__subtitle { color: var(--color-muted); font-size: var(--fs-sm); margin: 0; }
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-xs);
+  color: var(--color-muted);
+  margin-bottom: var(--space-3);
+}
+.breadcrumbs a { color: var(--color-muted); }
+.breadcrumbs a:hover { color: var(--color-primary); }
+.breadcrumbs__sep { color: var(--color-placeholder); }
+
+.grid { display: grid; gap: var(--space-5); }
+.grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
+
+.auth-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.auth-shell__panel {
+  background: linear-gradient(160deg, var(--color-primary-dark), var(--color-primary));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--space-16);
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-shell__form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8);
+  background: var(--color-canvas);
+}

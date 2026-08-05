@@ -1,0 +1,31 @@
+{
+  "name": "child-growth-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A full-stack web app for parents to track child growth, vaccinations, milestones, nutrition, sleep, appointments, and more — with an interactive dashboard, PDF/CSV reports, gamified achievements, and an admin panel.",
+  "keywords": [
+    "child-growth-tracker",
+    "healthcare",
+    "parenting",
+    "pediatric",
+    "vaccination-tracker",
+    "growth-chart",
+    "nodejs",
+    "express",
+    "mongodb",
+    "vanilla-javascript"
+  ],
+  "homepage": "https://github.com/OWNER/child-growth-tracker#readme",
+  "bugs": {
+    "url": "https://github.com/OWNER/child-growth-tracker/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OWNER/child-growth-tracker.git"
+  },
+  "license": "MIT",
+  "author": "Pujita Nitti",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

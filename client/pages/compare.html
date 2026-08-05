@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compare Siblings · Child Growth Tracker</title>
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="../css/variables.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/layout.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/forms.css">
+<link rel="stylesheet" href="../css/animations.css">
+<link rel="stylesheet" href="../css/themes.css">
+<link rel="stylesheet" href="../css/responsive.css">
+<link rel="stylesheet" href="../css/utilities.css">
+<link rel="stylesheet" href="../css/dashboard.css">
+<script>
+  (function () {
+    var saved = localStorage.getItem('cgt_theme');
+    if (saved) document.documentElement.setAttribute('data-theme', saved);
+    else if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.setAttribute('data-theme', 'dark');
+  })();
+</script>
+</head>
+<body>
+  <div class="app-shell">
+    <div id="sidebar-root"></div>
+    <div>
+      <div id="topbar-root"></div>
+      <main class="main-content">
+        <div class="breadcrumbs"><a href="/pages/dashboard.html">Home</a> <span class="breadcrumbs__sep">/</span> <a href="/pages/children.html">Children</a> <span class="breadcrumbs__sep">/</span> <span>Compare Siblings</span></div>
+        <div class="page-header">
+          <div>
+            <h1 class="page-header__title"><i class="fa-solid fa-people-arrows text-primary"></i> Compare Siblings</h1>
+            <p class="page-header__subtitle">Overlay growth curves across two or more children to see how their journeys compare.</p>
+          </div>
+        </div>
+
+        <div class="card mb-5">
+          <h3 class="mb-3">Select children to compare</h3>
+          <div class="flex flex-wrap gap-3" id="childPicker"></div>
+        </div>
+
+        <div id="compareEmptyState"></div>
+
+        <div id="compareCharts" class="hidden">
+          <div class="chart-tabs mb-4" id="chartTabs">
+            <button class="chart-tab active" data-metric="heightCm">Height</button>
+            <button class="chart-tab" data-metric="weightKg">Weight</button>
+            <button class="chart-tab" data-metric="bmi">BMI</button>
+          </div>
+          <div class="card">
+            <div class="chart-card__canvas-wrap" style="height:380px;">
+              <canvas id="compareChart"></canvas>
+            </div>
+          </div>
+          <p class="text-xs text-muted mt-3">
+            <i class="fa-solid fa-circle-info"></i>
+            Curves are plotted by each child's age in months at the time of measurement, not calendar date, so children born at different times line up fairly.
+          </p>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script type="module">
+    import { initApp } from '../js/app.js';
+    import { fetchChildren } from '../js/children.js';
+    import { fetchGrowthRecords } from '../js/growth.js';
+    import { initials, resolveUploadUrl } from '../js/utils.js';
+    import { renderIllustratedEmptyState } from '../js/illustrations.js';
+
+    const user = await initApp('compare');
+    if (!user) throw new Error('unauthenticated');
+
+    const { children } = await fetchChildren();
+    const selected = new Set();
+    let activeMetric = 'heightCm';
+    let chartInstance = null;
+
+    const PALETTE = ['#4F46E5', '#F59E0B', '#06B6D4', '#8B5CF6', '#EF4444', '#10B981'];
+
+    function ageInMonthsAt(dob, date) {
+      const d = new Date(date);
+      const b = new Date(dob);
+      return (d.getFullYear() - b.getFullYear()) * 12 + (d.getMonth() - b.getMonth());
+    }
+
+    function renderPicker() {
+      const picker = document.getElementById('childPicker');
+      if (!children.length) {
+        renderIllustratedEmptyState(picker.parentElement, {
+          illustration: 'noChildren', title: 'No children to compare',
+          message: 'Add at least two children to use this feature.',
+          actionHtml: '<a href="/pages/children.html" class="btn btn-primary mt-4">Go to Children</a>',
+        });
+        return;
+      }
+      picker.innerHTML = children.map((c) => `
+        <button class="child-select-chip" data-id="${c._id}">
+          ${c.photo ? `<img src="${resolveUploadUrl(c.photo)}" alt="">` : `<span class="avatar avatar-sm" style="width:22px;height:22px;font-size:0.6rem;">${initials(c.name)}</span>`}
+          <span>${c.name}</span>
+        </button>
+      `).join('');
+
+      picker.querySelectorAll('.child-select-chip').forEach((chip) => {
+        chip.addEventListener('click', () => {
+          const id = chip.dataset.id;
+          if (selected.has(id)) selected.delete(id); else selected.add(id);
+          chip.classList.toggle('active', selected.has(id));
+          renderComparison();
+        });
+      });
+    }
+
+    async function renderComparison() {
+      const emptyEl = document.getElementById('compareEmptyState');
+      const chartsEl = document.getElementById('compareCharts');
+
+      if (selected.size < 2) {
+        chartsEl.classList.add('hidden');
+        renderIllustratedEmptyState(emptyEl, {
+          illustration: 'noData',
+          title: 'Select at least 2 children',
+          message: 'Pick two or more children above to see their growth curves side by side.',
+        });
+        emptyEl.classList.remove('hidden');
+        return;
+      }
+      emptyEl.classList.add('hidden');
+      chartsEl.classList.remove('hidden');
+
+      const selectedChildren = children.filter((c) => selected.has(c._id));
+      const recordSets = await Promise.all(selectedChildren.map((c) => fetchGrowthRecords(c._id)));
+
+      const datasets = selectedChildren.map((child, i) => {
+        const records = recordSets[i];
+        const points = records
+          .map((r) => ({ x: ageInMonthsAt(child.dateOfBirth, r.date), y: r[activeMetric] }))
+          .filter((p) => p.y !== null && p.y !== undefined)
+          .sort((a, b) => a.x - b.x);
+        const color = PALETTE[i % PALETTE.length];
+        return {
+          label: child.name,
+          data: points,
+          borderColor: color,
+          backgroundColor: `${color}22`,
+          pointBackgroundColor: color,
+          pointRadius: 4,
+          tension: 0.35,
+          borderWidth: 2.5,
+          fill: false,
+        };
+      });
+
+      const canvas = document.getElementById('compareChart');
+      chartInstance?.destroy();
+      chartInstance = new Chart(canvas, {
+        type: 'line',
+        data: { datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          parsing: false,
+          scales: {
+            x: { type: 'linear', title: { display: true, text: 'Age (months)' } },
+            y: { title: { display: true, text: activeMetric === 'heightCm' ? 'Height (cm)' : activeMetric === 'weightKg' ? 'Weight (kg)' : 'BMI' } },
+          },
+          plugins: { legend: { display: true, position: 'bottom' } },
+        },
+      });
+    }
+
+    document.getElementById('chartTabs').addEventListener('click', (e) => {
+      const btn = e.target.closest('.chart-tab');
+      if (!btn) return;
+      document.querySelectorAll('.chart-tab').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeMetric = btn.dataset.metric;
+      renderComparison();
+    });
+
+    renderPicker();
+    renderComparison();
+  </script>
+</body>
+</html>

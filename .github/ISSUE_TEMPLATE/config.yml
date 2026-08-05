@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 Report a security vulnerability
+    url: https://github.com/OWNER/child-growth-tracker/security/advisories/new
+    about: Please do not report security issues in public GitHub issues.
+  - name: 💬 Ask a question
+    url: https://github.com/OWNER/child-growth-tracker/discussions
+    about: For general questions and discussion, not bug reports.

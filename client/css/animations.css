@@ -1,0 +1,162 @@
+/* ==========================================================================
+   animations.css — Keyframes and motion utility classes
+   ========================================================================== */
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* Signature motif: an animated growth-curve line used as a divider / loader.
+   The stroke draws itself in, then gently breathes — read as literal growth. */
+@keyframes draw-curve {
+  from { stroke-dashoffset: 240; }
+  to { stroke-dashoffset: 0; }
+}
+
+.growth-curve-divider path {
+  stroke-dasharray: 240;
+  animation: draw-curve 1.6s var(--ease-out) forwards;
+}
+
+.animate-fade-in { animation: fade-in var(--duration-slow) var(--ease-standard) both; }
+.animate-fade-in-up { animation: fade-in-up var(--duration-slow) var(--ease-out) both; }
+.animate-scale-in { animation: scale-in var(--duration-base) var(--ease-out) both; }
+.animate-slide-in-right { animation: slide-in-right var(--duration-base) var(--ease-out) both; }
+
+/* Stagger helper: apply alongside animate-fade-in-up, set --stagger-index on each item */
+.animate-stagger { animation-delay: calc(var(--stagger-index, 0) * 60ms); }
+
+.spinner {
+  width: 20px; height: 20px;
+  border: 2.5px solid var(--color-primary-soft);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+.spinner-lg { width: 40px; height: 40px; border-width: 3.5px; }
+
+.pulse { animation: pulse-soft 1.8s ease-in-out infinite; }
+
+/* Hover-lift utility for cards/buttons that want a subtle affordance */
+.hover-lift {
+  transition: transform var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-standard);
+}
+.hover-lift:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+
+/* Premium card tilt: subtle 3D lift on hover, used for stat/child/badge cards */
+.tilt-card {
+  transition: transform var(--duration-base) var(--ease-spring), box-shadow var(--duration-base) var(--ease-standard);
+  transform-style: preserve-3d;
+}
+.tilt-card:hover {
+  transform: translateY(-4px) rotateX(2deg) rotateY(-2deg) scale(1.01);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Button ripple: a JS helper (see utils.js `addRipple`) adds a .ripple span on click */
+.btn { position: relative; overflow: hidden; }
+.btn .ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  transform: scale(0);
+  animation: ripple-expand 550ms ease-out forwards;
+  pointer-events: none;
+}
+@keyframes ripple-expand {
+  to { transform: scale(3); opacity: 0; }
+}
+
+/* Icon micro-interactions */
+.icon-bounce:hover i { animation: icon-bounce 500ms var(--ease-spring); }
+.icon-pulse i { animation: pulse-soft 2s ease-in-out infinite; }
+@keyframes icon-bounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(-3px) scale(1.15); }
+  60% { transform: translateY(1px) scale(0.95); }
+}
+
+/* Gradient text / border utilities, used sparingly for headline moments */
+.text-gradient {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.gradient-border {
+  position: relative;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    var(--gradient-primary) border-box;
+}
+
+/* Glow effect for premium moments (hero cards, health score) */
+.glow-primary { box-shadow: 0 0 32px rgba(79, 70, 229, 0.25); }
+.glow-accent { box-shadow: 0 0 32px rgba(139, 92, 246, 0.22); }
+
+/* Subtle floating background blobs, used behind hero sections only */
+.bg-blobs {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.bg-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.35;
+  animation: blob-float 10s ease-in-out infinite;
+}
+@keyframes blob-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(20px, -16px) scale(1.08); }
+}
+
+/* Scroll-reveal target: JS toggles .is-visible via IntersectionObserver */
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity var(--duration-slow) var(--ease-out), transform var(--duration-slow) var(--ease-out);
+}
+.scroll-reveal.is-visible { opacity: 1; transform: translateY(0); }
+
+/* Animated counter target — JS updates textContent, this just smooths color/scale on change */
+.counter {
+  transition: color var(--duration-fast);
+}
+
+/* Page transition wrapper */
+.page-transition { animation: fade-in-up var(--duration-base) var(--ease-out) both; }

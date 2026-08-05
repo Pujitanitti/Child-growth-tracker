@@ -1,0 +1,49 @@
+name: ✨ Feature Request
+description: Suggest an idea or enhancement
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion! Note: this project deliberately stays vanilla HTML/CSS/JS with no framework or build step — feature ideas are very welcome, framework-migration proposals will likely be declined.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: What's missing, or what's awkward about the current experience?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Describe the solution you'd like
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you've considered
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which area does this affect?
+      options:
+        - Growth tracking
+        - Vaccinations / Milestones
+        - Nutrition / Sleep
+        - Appointments / Medicines
+        - Memory Timeline / Gamification
+        - Reports
+        - Admin Panel
+        - AI Assistant / Insights
+        - UI/UX polish
+        - Other
+    validations:
+      required: true

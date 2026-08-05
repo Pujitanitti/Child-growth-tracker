@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile & Settings · Child Growth Tracker</title>
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="../css/variables.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/layout.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/forms.css">
+<link rel="stylesheet" href="../css/animations.css">
+<link rel="stylesheet" href="../css/themes.css">
+<link rel="stylesheet" href="../css/responsive.css">
+<link rel="stylesheet" href="../css/utilities.css">
+<script>
+  (function () {
+    var saved = localStorage.getItem('cgt_theme');
+    if (saved) document.documentElement.setAttribute('data-theme', saved);
+    else if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.setAttribute('data-theme', 'dark');
+  })();
+</script>
+</head>
+<body>
+  <div class="app-shell">
+    <div id="sidebar-root"></div>
+    <div>
+      <div id="topbar-root"></div>
+      <main class="main-content">
+        <div class="breadcrumbs"><a href="/pages/dashboard.html">Home</a> <span class="breadcrumbs__sep">/</span> <span>Profile &amp; Settings</span></div>
+        <div class="page-header"><h1 class="page-header__title">Profile &amp; Settings</h1></div>
+
+        <div class="grid grid-cols-2">
+          <div class="card">
+            <h3 class="mb-4">Profile Photo</h3>
+            <div class="flex items-center gap-4">
+              <img id="avatarPreview" class="avatar avatar-lg" alt="Your avatar">
+              <div>
+                <input type="file" id="avatarInput" accept="image/*" class="hidden">
+                <button class="btn btn-secondary btn-sm" id="changeAvatarBtn">Change Photo</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 class="mb-4">Preferences</h3>
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-medium text-sm">Dark Mode</div>
+                <div class="text-xs text-muted">Switch between light and dark themes.</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="darkModeToggle">
+                <span class="switch__track"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 class="mb-4">Basic Information</h3>
+            <form id="profileForm">
+              <div class="form-group">
+                <label class="form-label" for="pf-name">Full name</label>
+                <input class="input" id="pf-name">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="pf-email">Email</label>
+                <input class="input" id="pf-email" disabled>
+                <div class="form-hint">Email address cannot be changed.</div>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="pf-phone">Phone</label>
+                <input class="input" id="pf-phone">
+              </div>
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+            </form>
+          </div>
+
+          <div class="card" id="settings">
+            <h3 class="mb-4">Change Password</h3>
+            <form id="passwordForm">
+              <div class="form-group">
+                <label class="form-label" for="pw-current">Current password</label>
+                <input class="input" type="password" id="pw-current" autocomplete="current-password">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="pw-new">New password</label>
+                <input class="input" type="password" id="pw-new" autocomplete="new-password">
+                <div class="password-strength" id="strengthMeter">
+                  <div class="password-strength__bar"></div><div class="password-strength__bar"></div><div class="password-strength__bar"></div>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="pw-confirm">Confirm new password</label>
+                <input class="input" type="password" id="pw-confirm" autocomplete="new-password">
+              </div>
+              <button type="submit" class="btn btn-primary">Change Password</button>
+            </form>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initApp } from '../js/app.js';
+    import { getCurrentUser } from '../js/auth.js';
+    import { updateProfile, changePassword, uploadAvatar, wirePasswordStrengthMeter } from '../js/profile.js';
+    import { applyTheme, getTheme } from '../js/theme.js';
+    import { showToast } from '../js/components/toast.js';
+    import { resolveUploadUrl, initials } from '../js/utils.js';
+    import { openCropModal } from '../js/imageCrop.js';
+
+    const user = await initApp('profile');
+    if (!user) throw new Error('unauthenticated');
+
+    function paintUser(u) {
+      document.getElementById('pf-name').value = u.name;
+      document.getElementById('pf-email').value = u.email;
+      document.getElementById('pf-phone').value = u.phone || '';
+      document.getElementById('avatarPreview').src = u.avatar
+        ? resolveUploadUrl(u.avatar)
+        : `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=CFEEE3&color=14503F`;
+    }
+    paintUser(user);
+
+    document.getElementById('darkModeToggle').checked = getTheme() === 'dark';
+    document.getElementById('darkModeToggle').addEventListener('change', (e) => {
+      applyTheme(e.target.checked ? 'dark' : 'light');
+    });
+
+    document.getElementById('changeAvatarBtn').addEventListener('click', () => document.getElementById('avatarInput').click());
+    document.getElementById('avatarInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      e.target.value = ''; // allow re-selecting the same file later
+      if (!file) return;
+      try {
+        const croppedBlob = await openCropModal(file);
+        const croppedFile = new File([croppedBlob], 'avatar.jpg', { type: 'image/jpeg' });
+        const updated = await uploadAvatar(croppedFile);
+        paintUser(updated);
+        showToast('Profile photo updated', 'success');
+      } catch (err) {
+        if (err.message !== 'cancelled') showToast(err.message, 'error');
+      }
+    });
+
+    document.getElementById('profileForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await updateProfile({
+          name: document.getElementById('pf-name').value.trim(),
+          phone: document.getElementById('pf-phone').value.trim(),
+        });
+        showToast('Profile updated', 'success');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+
+    wirePasswordStrengthMeter(document.getElementById('pw-new'), document.getElementById('strengthMeter'));
+
+    document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await changePassword(
+          document.getElementById('pw-current').value,
+          document.getElementById('pw-new').value,
+          document.getElementById('pw-confirm').value
+        );
+        showToast('Password changed successfully', 'success');
+        e.target.reset();
+      } catch (err) {
+        // validators.js already toasts field-level errors; only toast unexpected API errors here.
+        if (err.status) showToast(err.message, 'error');
+      }
+    });
+
+    if (window.location.hash === '#settings') {
+      document.getElementById('settings').scrollIntoView({ behavior: 'smooth' });
+    }
+  </script>
+</body>
+</html>

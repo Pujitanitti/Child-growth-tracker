@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend-tests:
+    name: Backend tests (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm install
+
+      - name: Run backend test suite
+        working-directory: backend
+        run: npm test
+        env:
+          NODE_ENV: test
+
+  frontend-syntax-check:
+    name: Frontend JS syntax check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Validate every client JS module parses cleanly
+        run: |
+          set -e
+          fail=0
+          for f in $(find client/js -name "*.js"); do
+            cp "$f" "/tmp/$(basename "$f" .js).mjs"
+            node --check "/tmp/$(basename "$f" .js).mjs" || { echo "Syntax error in $f"; fail=1; }
+          done
+          exit $fail
+
+  backend-syntax-check:
+    name: Backend JS syntax check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Validate every backend JS file parses cleanly
+        run: |
+          set -e
+          fail=0
+          for f in $(find backend -name "*.js" -not -path "backend/node_modules/*"); do
+            node --check "$f" || { echo "Syntax error in $f"; fail=1; }
+          done
+          exit $fail

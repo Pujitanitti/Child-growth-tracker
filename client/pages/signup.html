@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign Up · Child Growth Tracker</title>
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="../css/variables.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/layout.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/forms.css">
+<link rel="stylesheet" href="../css/animations.css">
+<link rel="stylesheet" href="../css/themes.css">
+<link rel="stylesheet" href="../css/responsive.css">
+<link rel="stylesheet" href="../css/utilities.css">
+<link rel="stylesheet" href="../css/pages/login.css">
+<link rel="stylesheet" href="../css/pages/signup.css">
+<script>
+  (function () {
+    var saved = localStorage.getItem('cgt_theme');
+    if (saved) document.documentElement.setAttribute('data-theme', saved);
+    else if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.setAttribute('data-theme', 'dark');
+  })();
+</script>
+</head>
+<body>
+  <div class="auth-shell">
+    <section class="auth-shell__panel">
+      <div class="auth-shell__panel-content">
+        <div class="flex items-center gap-3 mb-6">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="20" cy="20" r="19" fill="rgba(255,255,255,0.15)"/>
+            <path d="M6 26 L14 18 L19 23 L26 12 L34 20" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+          <span style="font-family:var(--font-display); font-weight:600; font-size:1.25rem; color:#fff;">GrowthTracker</span>
+        </div>
+        <h1 class="auth-shell__panel-title">Start your child's growth journey today.</h1>
+        <p class="auth-shell__panel-text">Free to use. Add your first child in under a minute and get an instantly generated vaccination schedule and milestone checklist.</p>
+      </div>
+      <svg class="auth-shell__panel-curve" viewBox="0 0 320 160" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M0 140 Q60 100 100 110 T200 60 T320 20" stroke="#fff" stroke-width="3" fill="none"/>
+      </svg>
+    </section>
+
+    <section class="auth-shell__form">
+      <div class="auth-card auth-card--wide animate-fade-in-up">
+        <h2 class="auth-card__title">Create your account</h2>
+        <p class="auth-card__subtitle">Free forever for parents. No credit card required.</p>
+
+        <form id="signupForm" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="name">Full name<span class="required">*</span></label>
+            <input class="input" id="name" autocomplete="name" required>
+            <div class="form-error hidden" id="err-name"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="email">Email address<span class="required">*</span></label>
+            <input class="input" type="email" id="email" autocomplete="email" required>
+            <div class="form-error hidden" id="err-email"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="password">Password<span class="required">*</span></label>
+            <input class="input" type="password" id="password" autocomplete="new-password" required>
+            <div class="password-strength" id="strengthMeter">
+              <div class="password-strength__bar"></div><div class="password-strength__bar"></div><div class="password-strength__bar"></div>
+            </div>
+            <div class="form-hint">At least 8 characters, with at least one number.</div>
+            <div class="form-error hidden" id="err-password"></div>
+          </div>
+          <label class="terms-row">
+            <input type="checkbox" id="terms" required>
+            <span>I agree to the Terms of Service and Privacy Policy.</span>
+          </label>
+          <button type="submit" class="btn btn-primary btn-block btn-lg" id="signupBtn">Create Account</button>
+        </form>
+
+        <p class="auth-card__footer">Already have an account? <a href="/pages/login.html">Log in</a></p>
+      </div>
+    </section>
+  </div>
+
+  <script type="module">
+    import { signup, redirectIfAuthenticated } from '../js/auth.js';
+    import { showToast } from '../js/components/toast.js';
+    import { validateForm, rules } from '../js/validators.js';
+    import { wirePasswordStrengthMeter } from '../js/profile.js';
+
+    redirectIfAuthenticated();
+    wirePasswordStrengthMeter(document.getElementById('password'), document.getElementById('strengthMeter'));
+
+    document.getElementById('signupForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const termsAccepted = document.getElementById('terms').checked;
+
+      const errors = validateForm({ name, email, password }, {
+        name: [(v) => rules.required(v, 'Name')],
+        email: [rules.email],
+        password: [rules.password],
+      });
+      document.querySelectorAll('.form-error').forEach((el) => el.classList.add('hidden'));
+      if (Object.keys(errors).length) {
+        Object.entries(errors).forEach(([field, msg]) => {
+          const el = document.getElementById(`err-${field}`);
+          el.textContent = msg; el.classList.remove('hidden');
+        });
+        return;
+      }
+      if (!termsAccepted) { showToast('Please accept the Terms of Service to continue', 'error'); return; }
+
+      const btn = document.getElementById('signupBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>';
+
+      try {
+        await signup(name, email, password);
+        window.location.href = '/pages/dashboard.html';
+      } catch (err) {
+        showToast(err.message, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+      }
+    });
+  </script>
+</body>
+</html>

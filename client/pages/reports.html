@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reports · Child Growth Tracker</title>
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="../css/variables.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/layout.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/forms.css">
+<link rel="stylesheet" href="../css/animations.css">
+<link rel="stylesheet" href="../css/themes.css">
+<link rel="stylesheet" href="../css/responsive.css">
+<link rel="stylesheet" href="../css/utilities.css">
+<link rel="stylesheet" href="../css/pages/reports.css">
+<script>
+  (function () {
+    var saved = localStorage.getItem('cgt_theme');
+    if (saved) document.documentElement.setAttribute('data-theme', saved);
+    else if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.setAttribute('data-theme', 'dark');
+  })();
+</script>
+</head>
+<body>
+  <div class="app-shell">
+    <div id="sidebar-root"></div>
+    <div>
+      <div id="topbar-root"></div>
+      <main class="main-content">
+        <div class="breadcrumbs"><a href="/pages/dashboard.html">Home</a> <span class="breadcrumbs__sep">/</span> <span>Reports</span></div>
+        <div class="page-header">
+          <div>
+            <h1 class="page-header__title">Reports</h1>
+            <p class="page-header__subtitle">Download PDF or CSV reports for any child.</p>
+          </div>
+        </div>
+
+        <div class="form-group" style="max-width:320px;">
+          <label class="form-label" for="childSelect">Select a child</label>
+          <select class="select" id="childSelect"></select>
+        </div>
+
+        <div class="grid grid-cols-2 mt-5" id="reportCards"></div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initApp } from '../js/app.js';
+    import { fetchChildren } from '../js/children.js';
+    import { downloadReport } from '../js/reports.js';
+    import { showToast } from '../js/components/toast.js';
+
+    const user = await initApp('reports');
+    if (!user) throw new Error('unauthenticated');
+
+    const { children } = await fetchChildren();
+    const select = document.getElementById('childSelect');
+
+    if (!children.length) {
+      select.innerHTML = '<option>No children yet</option>';
+      select.disabled = true;
+    } else {
+      select.innerHTML = children.map((c) => `<option value="${c._id}">${c.name}</option>`).join('');
+    }
+
+    const REPORTS = [
+      { type: 'growth', icon: 'fa-chart-line', title: 'Growth Report', desc: 'Full height/weight/BMI history as a PDF.' },
+      { type: 'vaccination', icon: 'fa-syringe', title: 'Vaccination Report', desc: 'Complete vaccination schedule and status as a PDF.' },
+      { type: 'summary', icon: 'fa-file-lines', title: 'Child Summary Report', desc: 'Profile, medical info, and latest growth as a PDF.' },
+      { type: 'csv', icon: 'fa-file-csv', title: 'Growth Data (CSV)', desc: 'Raw growth records for spreadsheets and analysis.' },
+    ];
+
+    function renderCards() {
+      const container = document.getElementById('reportCards');
+      container.innerHTML = REPORTS.map((r, i) => `
+        <div class="card report-card tilt-card animate-fade-in-up animate-stagger" style="--stagger-index:${i}">
+          <div class="report-card__icon"><i class="fa-solid ${r.icon}"></i></div>
+          <div>
+            <div class="report-card__title">${r.title}</div>
+            <div class="report-card__desc">${r.desc}</div>
+          </div>
+          <button class="btn btn-secondary report-card__action" data-type="${r.type}" ${!children.length ? 'disabled' : ''}>
+            <i class="fa-solid fa-download"></i> Download
+          </button>
+        </div>
+      `).join('');
+
+      container.querySelectorAll('button[data-type]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const child = children.find((c) => c._id === select.value);
+          if (!child) { showToast('Select a child first', 'error'); return; }
+          btn.disabled = true;
+          const original = btn.innerHTML;
+          btn.innerHTML = '<span class="spinner"></span>';
+          await downloadReport(child._id, child.name, btn.dataset.type);
+          btn.disabled = false;
+          btn.innerHTML = original;
+        });
+      });
+    }
+
+    renderCards();
+  </script>
+</body>
+</html>

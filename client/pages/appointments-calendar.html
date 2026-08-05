@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Appointments Calendar · Child Growth Tracker</title>
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="../css/variables.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/layout.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/forms.css">
+<link rel="stylesheet" href="../css/animations.css">
+<link rel="stylesheet" href="../css/themes.css">
+<link rel="stylesheet" href="../css/responsive.css">
+<link rel="stylesheet" href="../css/utilities.css">
+<script>
+  (function () {
+    var saved = localStorage.getItem('cgt_theme');
+    if (saved) document.documentElement.setAttribute('data-theme', saved);
+    else if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.setAttribute('data-theme', 'dark');
+  })();
+</script>
+<style>
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .cal-weekday { text-align: center; font-size: var(--fs-xs); font-weight: 600; color: var(--color-muted); padding: var(--space-2) 0; }
+  .cal-day {
+    min-height: 88px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    padding: var(--space-2);
+    cursor: pointer;
+    transition: box-shadow var(--duration-fast), border-color var(--duration-fast);
+  }
+  .cal-day:hover { border-color: var(--color-primary); box-shadow: var(--shadow-sm); }
+  .cal-day.other-month { opacity: 0.4; }
+  .cal-day.today { border-color: var(--color-primary); box-shadow: var(--shadow-glow-primary); }
+  .cal-day__num { font-size: var(--fs-xs); font-weight: 600; color: var(--color-ink); }
+  .cal-day__dots { display: flex; flex-wrap: wrap; gap: 3px; margin-top: var(--space-2); }
+  .cal-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color-primary); }
+</style>
+</head>
+<body>
+  <div class="app-shell">
+    <div id="sidebar-root"></div>
+    <div>
+      <div id="topbar-root"></div>
+      <main class="main-content">
+        <div class="breadcrumbs"><a href="/pages/dashboard.html">Home</a> <span class="breadcrumbs__sep">/</span> <span>Appointments Calendar</span></div>
+        <div class="page-header">
+          <div>
+            <h1 class="page-header__title"><i class="fa-solid fa-calendar-days text-primary"></i> Appointments Calendar</h1>
+            <p class="page-header__subtitle">All scheduled doctor visits across your children, at a glance.</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <button class="btn btn-secondary btn-icon" id="prevMonthBtn" aria-label="Previous month"><i class="fa-solid fa-chevron-left"></i></button>
+            <h3 id="monthLabel" style="min-width:160px; text-align:center;"></h3>
+            <button class="btn btn-secondary btn-icon" id="nextMonthBtn" aria-label="Next month"><i class="fa-solid fa-chevron-right"></i></button>
+          </div>
+        </div>
+
+        <div class="card mb-5">
+          <div class="cal-grid" id="calWeekdays"></div>
+          <div class="cal-grid mt-2" id="calGrid"></div>
+        </div>
+
+        <div class="card" id="dayDetailCard">
+          <h3 class="mb-3" id="dayDetailTitle">Select a day</h3>
+          <div id="dayDetailList"><p class="text-muted text-sm">Click any day above to see its appointments.</p></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initApp } from '../js/app.js';
+    import { fetchChildren } from '../js/children.js';
+    import { fetchAppointments } from '../js/appointments.js';
+    import { formatDate, resolveUploadUrl, initials } from '../js/utils.js';
+
+    const user = await initApp('calendar');
+    if (!user) throw new Error('unauthenticated');
+
+    const { children } = await fetchChildren();
+    let allAppointments = [];
+    let cursor = new Date();
+    cursor.setDate(1);
+
+    async function loadAllAppointments() {
+      const lists = await Promise.all(children.map(async (c) => {
+        const appts = await fetchAppointments(c._id);
+        return appts.map((a) => ({ ...a, childName: c.name, childPhoto: c.photo }));
+      }));
+      allAppointments = lists.flat();
+    }
+
+    function apptsOnDay(date) {
+      return allAppointments.filter((a) => new Date(a.dateTime).toDateString() === date.toDateString());
+    }
+
+    const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    document.getElementById('calWeekdays').innerHTML = WEEKDAYS.map((d) => `<div class="cal-weekday">${d}</div>`).join('');
+
+    function renderCalendar() {
+      document.getElementById('monthLabel').textContent = cursor.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+      const year = cursor.getFullYear();
+      const month = cursor.getMonth();
+      const firstDay = new Date(year, month, 1);
+      const startOffset = firstDay.getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const today = new Date();
+
+      const cells = [];
+      for (let i = 0; i < startOffset; i += 1) {
+        const d = new Date(year, month, i - startOffset + 1);
+        cells.push({ date: d, otherMonth: true });
+      }
+      for (let d = 1; d <= daysInMonth; d += 1) {
+        cells.push({ date: new Date(year, month, d), otherMonth: false });
+      }
+      while (cells.length % 7 !== 0) {
+        const last = cells[cells.length - 1].date;
+        cells.push({ date: new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1), otherMonth: true });
+      }
+
+      document.getElementById('calGrid').innerHTML = cells.map(({ date, otherMonth }) => {
+        const isToday = date.toDateString() === today.toDateString();
+        const dayAppts = apptsOnDay(date);
+        return `
+          <div class="cal-day ${otherMonth ? 'other-month' : ''} ${isToday ? 'today' : ''}" data-date="${date.toISOString()}">
+            <div class="cal-day__num">${date.getDate()}</div>
+            <div class="cal-day__dots">${dayAppts.map(() => '<span class="cal-dot"></span>').join('')}</div>
+          </div>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.cal-day').forEach((el) => {
+        el.addEventListener('click', () => showDayDetail(new Date(el.dataset.date)));
+      });
+    }
+
+    function showDayDetail(date) {
+      document.getElementById('dayDetailTitle').textContent = formatDate(date, { weekday: 'long' });
+      const dayAppts = apptsOnDay(date);
+      const list = document.getElementById('dayDetailList');
+      if (!dayAppts.length) {
+        list.innerHTML = '<p class="text-muted text-sm">No appointments this day.</p>';
+        return;
+      }
+      list.innerHTML = dayAppts.map((a) => `
+        <div class="activity-item">
+          ${a.childPhoto
+            ? `<img src="${resolveUploadUrl(a.childPhoto)}" class="activity-item__icon" style="object-fit:cover;" alt="">`
+            : `<span class="activity-item__icon">${initials(a.childName)}</span>`}
+          <div>
+            <div class="activity-item__title">${a.title} — ${a.childName}</div>
+            <div class="activity-item__meta">${new Date(a.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}${a.doctorName ? ` · Dr. ${a.doctorName}` : ''}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('prevMonthBtn').addEventListener('click', () => {
+      cursor.setMonth(cursor.getMonth() - 1);
+      renderCalendar();
+    });
+    document.getElementById('nextMonthBtn').addEventListener('click', () => {
+      cursor.setMonth(cursor.getMonth() + 1);
+      renderCalendar();
+    });
+
+    await loadAllAppointments();
+    renderCalendar();
+  </script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Child Growth Tracker</title>
+<link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
+<style>
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; font-family: -apple-system, sans-serif; background:#F8FAFC; }
+  .spinner { width:32px; height:32px; border:3px solid #E0E7FF; border-top-color:#4F46E5; border-radius:50%; animation:spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+  <div class="spinner" role="status" aria-label="Loading"></div>
+  <script>
+    window.location.href = localStorage.getItem('cgt_token')
+      ? '/pages/dashboard.html'
+      : '/pages/login.html';
+  </script>
+</body>
+</html>

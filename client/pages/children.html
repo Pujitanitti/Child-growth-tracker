@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Children · Child Growth Tracker</title>
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="../css/variables.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/layout.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/forms.css">
+<link rel="stylesheet" href="../css/tables.css">
+<link rel="stylesheet" href="../css/animations.css">
+<link rel="stylesheet" href="../css/themes.css">
+<link rel="stylesheet" href="../css/responsive.css">
+<link rel="stylesheet" href="../css/utilities.css">
+<link rel="stylesheet" href="../css/dashboard.css">
+<link rel="stylesheet" href="../css/pages/children.css">
+<script>
+  (function () {
+    var saved = localStorage.getItem('cgt_theme');
+    if (saved) document.documentElement.setAttribute('data-theme', saved);
+    else if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.setAttribute('data-theme', 'dark');
+  })();
+</script>
+</head>
+<body>
+  <div class="app-shell">
+    <div id="sidebar-root"></div>
+    <div>
+      <div id="topbar-root"></div>
+      <main class="main-content">
+        <div class="breadcrumbs"><a href="/pages/dashboard.html">Home</a> <span class="breadcrumbs__sep">/</span> <span id="breadcrumbCurrent">Children</span></div>
+
+        <!-- LIST VIEW -->
+        <section id="listView">
+          <div class="page-header">
+            <div>
+              <h1 class="page-header__title">Children</h1>
+              <p class="page-header__subtitle">Manage profiles and jump into any child's growth story.</p>
+            </div>
+            <div class="flex gap-3 flex-wrap">
+              <button class="btn btn-secondary" id="importCsvBtn"><i class="fa-solid fa-file-csv"></i> Import CSV</button>
+              <input type="file" id="csvInput" accept=".csv" class="hidden">
+              <a href="/pages/compare.html" class="btn btn-secondary"><i class="fa-solid fa-people-arrows"></i> Compare Siblings</a>
+              <button class="btn btn-primary" id="addChildBtn"><i class="fa-solid fa-plus"></i> Add Child</button>
+            </div>
+          </div>
+
+          <div class="input-group mb-5" style="max-width:360px;">
+            <i class="fa-solid fa-magnifying-glass input-group__icon"></i>
+            <input class="input" id="childSearch" placeholder="Search children by name...">
+          </div>
+
+          <div class="grid grid-cols-3" id="childrenGrid"></div>
+        </section>
+
+        <!-- DETAIL VIEW -->
+        <section id="detailView" class="hidden">
+          <button class="btn btn-ghost btn-sm mb-4" id="backToListBtn"><i class="fa-solid fa-arrow-left"></i> Back to all children</button>
+
+          <div class="child-profile-header">
+            <div class="relative">
+              <img class="child-profile-header__photo" id="detailPhoto" alt="">
+              <button class="icon-btn" id="changeChildPhotoBtn" style="position:absolute; bottom:0; right:0; background:var(--color-primary); color:#fff; width:28px; height:28px;" aria-label="Change photo" data-tooltip="Change photo">
+                <i class="fa-solid fa-camera" style="font-size:0.7rem;"></i>
+              </button>
+              <input type="file" id="childPhotoInput" accept="image/*" class="hidden">
+            </div>
+            <div class="flex-1">
+              <h1 id="detailName" class="mb-0"></h1>
+              <p class="text-muted" id="detailMeta"></p>
+              <div class="child-profile-header__badges" id="detailBadges"></div>
+            </div>
+            <button class="btn btn-secondary" id="editChildBtn"><i class="fa-solid fa-pen"></i> Edit</button>
+            <a class="btn btn-secondary" id="emergencyCardLink" href="#"><i class="fa-solid fa-id-card"></i> Emergency Card</a>
+            <button class="btn btn-ghost" id="deleteChildBtn" aria-label="Delete child"><i class="fa-solid fa-trash text-danger"></i></button>
+          </div>
+
+          <div id="growthAlerts"></div>
+
+          <div class="tabs" role="tablist">
+            <button class="tab-btn active" data-tab="growth" role="tab">Growth</button>
+            <button class="tab-btn" data-tab="vaccinations" role="tab">Vaccinations</button>
+            <button class="tab-btn" data-tab="milestones" role="tab">Milestones</button>
+            <button class="tab-btn" data-tab="nutrition" role="tab">Nutrition</button>
+            <button class="tab-btn" data-tab="sleep" role="tab">Sleep</button>
+            <button class="tab-btn" data-tab="appointments" role="tab">Appointments</button>
+            <button class="tab-btn" data-tab="medicines" role="tab">Medicines</button>
+            <button class="tab-btn" data-tab="timeline" role="tab">Timeline</button>
+            <button class="tab-btn" data-tab="badges" role="tab">Achievements</button>
+            <button class="tab-btn" data-tab="profile" role="tab">Profile</button>
+          </div>
+
+          <!-- Growth tab -->
+          <div class="tab-panel" data-panel="growth">
+            <div class="mb-5" id="insightsContainer"></div>
+
+            <div class="grid grid-cols-3 mb-5">
+              <div class="card text-center">
+                <div class="text-xs text-muted mb-1">Growth Score</div>
+                <div class="growth-score-ring mx-auto" style="margin:0 auto;">
+                  <canvas id="detailScoreRing" width="96" height="96"></canvas>
+                  <div class="growth-score-ring__value" id="detailScoreValue">—</div>
+                </div>
+              </div>
+              <div class="card">
+                <div class="text-xs text-muted mb-1">Predicted height (+6mo)</div>
+                <div class="stat-card__value" id="predictedHeight">—</div>
+                <div class="text-xs text-muted">Linear trend estimate, not a clinical prediction</div>
+              </div>
+              <div class="card">
+                <div class="text-xs text-muted mb-1">Growth Velocity</div>
+                <div class="stat-card__value" id="growthVelocity">—</div>
+                <div class="text-xs text-muted">Height gain per month</div>
+              </div>
+            </div>
+
+            <div class="flex justify-between items-center mb-3">
+              <h3>Growth Charts</h3>
+              <button class="btn btn-primary btn-sm" id="addGrowthBtn"><i class="fa-solid fa-plus"></i> Add Measurement</button>
+            </div>
+            <div class="chart-tabs mb-4" id="chartTabs">
+              <button class="chart-tab active" data-chart="height">Height</button>
+              <button class="chart-tab" data-chart="weight">Weight</button>
+              <button class="chart-tab" data-chart="bmi">BMI Trend</button>
+              <button class="chart-tab" data-chart="head">Head Circumference</button>
+              <button class="chart-tab" data-chart="percentile">Percentile</button>
+            </div>
+            <div class="card">
+              <div class="chart-card__canvas-wrap"><canvas id="growthChart"></canvas></div>
+            </div>
+          </div>
+
+          <!-- Vaccinations tab -->
+          <div class="tab-panel hidden" data-panel="vaccinations">
+            <div class="flex justify-between items-center mb-3">
+              <h3>Vaccination Schedule</h3>
+              <button class="btn btn-primary btn-sm" id="addVaccineBtn"><i class="fa-solid fa-plus"></i> Add Vaccine</button>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead><tr><th>Vaccine</th><th>Dose</th><th>Due Date</th><th>Status</th><th></th></tr></thead>
+                <tbody id="vaccinationsBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Milestones tab -->
+          <div class="tab-panel hidden" data-panel="milestones">
+            <h3 class="mb-4">Developmental Milestones</h3>
+            <div id="milestonesContainer"></div>
+          </div>
+
+          <!-- Nutrition tab -->
+          <div class="tab-panel hidden" data-panel="nutrition">
+            <div class="flex justify-between items-center mb-3">
+              <h3>Today's Nutrition</h3>
+              <button class="btn btn-primary btn-sm" id="addMealBtn"><i class="fa-solid fa-plus"></i> Log Meal</button>
+            </div>
+            <div class="grid grid-cols-3 mb-5">
+              <div class="card"><div class="text-xs text-muted">Calories</div><div class="stat-card__value" id="totalCalories">0</div></div>
+              <div class="card"><div class="text-xs text-muted">Protein</div><div class="stat-card__value" id="totalProtein">0g</div></div>
+              <div class="card">
+                <div class="text-xs text-muted mb-1">Water Intake (ml)</div>
+                <input class="input" type="number" id="waterInput" placeholder="0">
+              </div>
+            </div>
+            <div id="nutritionSuggestions" class="mb-4"></div>
+            <div class="card" id="mealsList"></div>
+          </div>
+
+          <!-- Sleep tab -->
+          <div class="tab-panel hidden" data-panel="sleep">
+            <div class="flex justify-between items-center mb-3">
+              <h3>Sleep History</h3>
+              <button class="btn btn-primary btn-sm" id="addSleepBtn"><i class="fa-solid fa-plus"></i> Log Sleep</button>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead><tr><th>Date</th><th>Hours Slept</th><th>Nap</th><th>Quality</th><th></th></tr></thead>
+                <tbody id="sleepBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Appointments tab -->
+          <div class="tab-panel hidden" data-panel="appointments">
+            <div class="flex justify-between items-center mb-3">
+              <h3>Doctor Appointments</h3>
+              <button class="btn btn-primary btn-sm" id="addApptBtn"><i class="fa-solid fa-plus"></i> Schedule Appointment</button>
+            </div>
+            <div id="appointmentsList"></div>
+          </div>
+
+          <!-- Medicines tab -->
+          <div class="tab-panel hidden" data-panel="medicines">
+            <div class="flex justify-between items-center mb-3">
+              <h3>Medicine Reminders</h3>
+              <button class="btn btn-primary btn-sm" id="addMedBtn"><i class="fa-solid fa-plus"></i> Add Reminder</button>
+            </div>
+            <div id="medicinesList"></div>
+          </div>
+
+          <!-- Timeline tab -->
+          <div class="tab-panel hidden" data-panel="timeline">
+            <div class="flex justify-between items-center mb-3">
+              <h3>Memory Timeline</h3>
+              <button class="btn btn-primary btn-sm" id="addMemoryBtn"><i class="fa-solid fa-plus"></i> Add Memory</button>
+            </div>
+            <div class="timeline" id="timelineContainer"></div>
+          </div>
+
+          <!-- Achievements tab -->
+          <div class="tab-panel hidden" data-panel="badges">
+            <h3 class="mb-4">Achievements</h3>
+            <div class="grid grid-cols-4" id="badgesContainer"></div>
+          </div>
+
+          <!-- Profile tab -->
+          <div class="tab-panel hidden" data-panel="profile">
+            <div class="grid grid-cols-2">
+              <div class="card">
+                <h4 class="mb-3">Basic Information</h4>
+                <div class="info-list" id="profileBasic"></div>
+              </div>
+              <div class="card">
+                <h4 class="mb-3">Medical Information</h4>
+                <div class="info-list mb-3" id="profileMedical"></div>
+                <div class="mb-2 text-xs text-muted">Allergies</div>
+                <div class="tag-list mb-3" id="profileAllergies"></div>
+                <div class="mb-2 text-xs text-muted">Medical Conditions</div>
+                <div class="tag-list" id="profileConditions"></div>
+              </div>
+              <div class="card">
+                <h4 class="mb-3">Emergency Contact</h4>
+                <div class="info-list" id="profileEmergency"></div>
+              </div>
+              <div class="card">
+                <h4 class="mb-3">Doctor Details</h4>
+                <div class="info-list" id="profileDoctor"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div id="assistantRoot"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script type="module">
+    import { initApp } from '../js/app.js';
+    import { initTabs } from '../js/components/tabs.js';
+    import { fetchChildren, childCardHtml, openChildFormModal, deleteChild, bindChildSearch, uploadChildPhoto } from '../js/children.js';
+    import { fetchGrowthRecords, fetchGrowthInsights, deleteGrowthRecord, openAddGrowthModal, alertBannerHtml } from '../js/growth.js';
+    import { fetchVaccinations, markVaccinationComplete, deleteVaccination, vaccinationRowHtml, openAddVaccineModal } from '../js/vaccination.js';
+    import { fetchDailyNutrition, updateWaterIntake, mealRowHtml, openAddMealModal } from '../js/nutrition.js';
+    import { fetchSleepLogs, deleteSleepLog, sleepRowHtml, openAddSleepModal } from '../js/sleep.js';
+    import { fetchAppointments, updateAppointmentStatus, deleteAppointment, appointmentCardHtml, openAddAppointmentModal } from '../js/appointments.js';
+    import { fetchMedicines, markMedicineTaken, medicineCardHtml, openAddMedicineModal } from '../js/medicines.js';
+    import { fetchMemories, deleteMemory, memoryItemHtml, openAddMemoryModal } from '../js/memories.js';
+    import { fetchBadges, badgeCardHtml, celebrate } from '../js/badges.js';
+    import { checkAssistantAvailable, mountAssistantWidget } from '../js/assistant.js';
+    import { fetchInsights, renderInsights } from '../js/insights.js';
+    import { renderIllustratedEmptyState } from '../js/illustrations.js';
+    import { openCropModal } from '../js/imageCrop.js';
+    import { api } from '../js/api.js';
+    import { showToast } from '../js/components/toast.js';
+    import { renderSkeletonRows } from '../js/components/loader.js';
+    import { formatAge, formatDate, resolveUploadUrl, initials, ordinal } from '../js/utils.js';
+    import { renderHeightChart, renderWeightChart, renderBmiTrendChart, renderHeadCircumferenceChart, renderPercentileChart, renderScoreDonut } from '../js/charts.js';
+
+    const user = await initApp('children');
+    if (!user) throw new Error('unauthenticated');
+
+    let allChildren = [];
+    let currentChild = null;
+    let currentRecords = [];
+
+    async function loadList() {
+      const { children } = await fetchChildren();
+      allChildren = children;
+      renderList(children);
+    }
+
+    function renderList(children) {
+      const grid = document.getElementById('childrenGrid');
+      if (!children.length) {
+        renderIllustratedEmptyState(grid, {
+          illustration: 'noChildren', title: 'Start your child\'s health journey',
+          message: 'Add your first child to begin tracking growth, vaccinations, and more.',
+          actionHtml: '<button class="btn btn-primary mt-4" id="emptyAddBtn">Add a Child</button>',
+        });
+        document.getElementById('emptyAddBtn')?.addEventListener('click', () => openChildFormModal(null, onChildSaved));
+        return;
+      }
+      grid.innerHTML = children.map(childCardHtml).join('');
+      grid.querySelectorAll('[data-child-id]').forEach((card) => {
+        card.addEventListener('click', () => openDetail(card.dataset.childId));
+        card.addEventListener('keydown', (e) => { if (e.key === 'Enter') openDetail(card.dataset.childId); });
+      });
+    }
+
+    function onChildSaved() { loadList(); }
+
+    document.getElementById('addChildBtn').addEventListener('click', () => openChildFormModal(null, onChildSaved));
+    bindChildSearch(document.getElementById('childSearch'), renderList);
+
+    // --- Detail view -----------------------------------------------------
+    async function openDetail(childId) {
+      currentChild = allChildren.find((c) => c._id === childId) || (await api.get(`/children/${childId}`)).data.child;
+      document.getElementById('listView').classList.add('hidden');
+      document.getElementById('detailView').classList.remove('hidden');
+      document.getElementById('breadcrumbCurrent').textContent = currentChild.name;
+      history.replaceState(null, '', `#${childId}`);
+      window.scrollTo(0, 0);
+
+      renderDetailHeader();
+      // The tab panels are reused across children rather than recreated, so
+      // every tab's cached "already loaded" state is for the *previous*
+      // child and must be thrown out here. force:true re-runs the Growth
+      // tab's loader even though its key ('growth') likely hasn't changed.
+      tabsController.invalidateAll();
+      tabsController.activate('growth', { force: true, skipScrollSave: true });
+
+      if (await checkAssistantAvailable()) {
+        mountAssistantWidget(document.getElementById('assistantRoot'), currentChild._id);
+      } else {
+        document.getElementById('assistantRoot').innerHTML = '';
+      }
+    }
+
+    function renderDetailHeader() {
+      const c = currentChild;
+      document.getElementById('detailPhoto').src = c.photo ? resolveUploadUrl(c.photo) : `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name)}&background=CFEEE3&color=14503F`;
+      document.getElementById('detailName').textContent = c.name;
+      document.getElementById('detailMeta').textContent = `${formatAge(c.dateOfBirth)} old · Born ${formatDate(c.dateOfBirth)}`;
+      document.getElementById('detailBadges').innerHTML = `
+        <span class="badge badge-neutral">${c.gender}</span>
+        <span class="badge badge-info">${c.bloodGroup}</span>
+      `;
+      document.getElementById('emergencyCardLink').href = `/pages/emergency-card.html#${c._id}`;
+    }
+
+    document.getElementById('backToListBtn').addEventListener('click', () => {
+      document.getElementById('detailView').classList.add('hidden');
+      document.getElementById('listView').classList.remove('hidden');
+      document.getElementById('breadcrumbCurrent').textContent = 'Children';
+      document.getElementById('assistantRoot').innerHTML = '';
+      history.replaceState(null, '', '#');
+    });
+
+    document.getElementById('editChildBtn').addEventListener('click', () => {
+      openChildFormModal(currentChild, (updated) => { currentChild = updated; renderDetailHeader(); loadList(); });
+    });
+
+    document.getElementById('deleteChildBtn').addEventListener('click', async () => {
+      if (!confirm(`Remove ${currentChild.name}? This can't be undone from the UI.`)) return;
+      await deleteChild(currentChild._id);
+      showToast('Child removed', 'success');
+      document.getElementById('backToListBtn').click();
+      loadList();
+    });
+
+    // --- Tabs --------------------------------------------------------------
+    // One controller instance for the page's lifetime; openDetail() calls
+    // invalidateAll() + a forced re-activate whenever a *different* child is
+    // opened, since the tab panels are reused across children rather than
+    // recreated — see the comment in openDetail() for why this matters.
+    const tabsController = initTabs(
+      document.querySelector('.tabs'),
+      document.getElementById('detailView'),
+      {
+        autoActivate: false, // this page's tabs need a child selected first — see openDetail()
+        onActivate: async (tab) => {
+          if (tab === 'growth') await loadGrowthTab();
+          if (tab === 'vaccinations') await loadVaccinationsTab();
+          if (tab === 'milestones') await loadMilestonesTab();
+          if (tab === 'nutrition') await loadNutritionTab();
+          if (tab === 'sleep') await loadSleepTab();
+          if (tab === 'appointments') await loadAppointmentsTab();
+          if (tab === 'medicines') await loadMedicinesTab();
+          if (tab === 'timeline') await loadTimelineTab();
+          if (tab === 'badges') await loadBadgesTab();
+          if (tab === 'profile') loadProfileTab();
+        },
+      }
+    );
+
+    // --- Appointments tab -----------------------------------------------------
+    async function loadAppointmentsTab() {
+      const container = document.getElementById('appointmentsList');
+      container.innerHTML = '<p class="text-muted text-sm">Loading...</p>';
+      const appointments = await fetchAppointments(currentChild._id);
+      if (!appointments.length) {
+        renderIllustratedEmptyState(container, { illustration: 'noAppointments', title: 'Your child has no upcoming visits', message: 'Schedule a doctor visit to see it here.' });
+        return;
+      }
+      container.innerHTML = appointments.map(appointmentCardHtml).join('');
+    }
+
+    document.getElementById('addApptBtn').addEventListener('click', () => {
+      openAddAppointmentModal(currentChild._id, loadAppointmentsTab);
+    });
+
+    document.getElementById('appointmentsList').addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-action]');
+      if (!btn) return;
+      if (btn.dataset.action === 'complete') await updateAppointmentStatus(btn.dataset.id, 'completed');
+      if (btn.dataset.action === 'cancel') await updateAppointmentStatus(btn.dataset.id, 'cancelled');
+      loadAppointmentsTab();
+    });
+
+    // --- Medicines tab ---------------------------------------------------------
+    async function loadMedicinesTab() {
+      const container = document.getElementById('medicinesList');
+      container.innerHTML = '<p class="text-muted text-sm">Loading...</p>';
+      const medicines = await fetchMedicines(currentChild._id);
+      if (!medicines.length) {
+        renderIllustratedEmptyState(container, { illustration: 'noMedicines', title: 'No active medicine reminders', message: 'Add one to keep track of doses.' });
+        return;
+      }
+      container.innerHTML = medicines.map(medicineCardHtml).join('');
+    }
+
+    document.getElementById('addMedBtn').addEventListener('click', () => {
+      openAddMedicineModal(currentChild._id, loadMedicinesTab);
+    });
+
+    document.getElementById('medicinesList').addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-action="taken"]');
+      if (!btn) return;
+      await markMedicineTaken(btn.dataset.id);
+      showToast('Marked as taken', 'success');
+      loadMedicinesTab();
+    });
+
+    // --- Timeline tab -----------------------------------------------------------
+    async function loadTimelineTab() {
+      const container = document.getElementById('timelineContainer');
+      container.innerHTML = '<p class="text-muted text-sm">Loading...</p>';
+      const memories = await fetchMemories(currentChild._id);
+      if (!memories.length) {
+        renderIllustratedEmptyState(container, { illustration: 'noMemories', title: 'No memories yet', message: 'Add first steps, first words, birthdays, and more to build their story.' });
+        return;
+      }
+      container.innerHTML = memories.map(memoryItemHtml).join('');
+    }
+
+    document.getElementById('addMemoryBtn').addEventListener('click', () => {
+      openAddMemoryModal(currentChild._id, loadTimelineTab);
+    });
+
+    document.getElementById('timelineContainer').addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-action="delete"]');
+      if (!btn) return;
+      if (!confirm('Delete this memory?')) return;
+      await deleteMemory(btn.dataset.id);
+      showToast('Memory removed', 'success');
+      loadTimelineTab();
+    });
+
+    // --- Achievements tab ---------------------------------------------------------
+    async function loadBadgesTab() {
+      const container = document.getElementById('badgesContainer');
+      container.innerHTML = '<p class="text-muted text-sm">Loading...</p>';
+      const { badges } = await fetchBadges(currentChild._id);
+      container.innerHTML = badges.map(badgeCardHtml).join('');
+      container.querySelectorAll('.badge-card--earned').forEach((card) => celebrate(card));
+    }
+
+    // --- Child photo (with cropping) --------------------------------------------
+    document.getElementById('changeChildPhotoBtn').addEventListener('click', () => document.getElementById('childPhotoInput').click());
+    document.getElementById('childPhotoInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      e.target.value = '';
+      if (!file) return;
+      try {
+        const croppedBlob = await openCropModal(file);
+        const croppedFile = new File([croppedBlob], 'child-photo.jpg', { type: 'image/jpeg' });
+        const updated = await uploadChildPhoto(currentChild._id, croppedFile);
+        currentChild = updated;
+        renderDetailHeader();
+        showToast('Photo updated', 'success');
+        loadList();
+      } catch (err) {
+        if (err.message !== 'cancelled') showToast(err.message, 'error');
+      }
+    });
+
+    // --- CSV import ---------------------------------------------------------------
+    document.getElementById('importCsvBtn').addEventListener('click', () => document.getElementById('csvInput').click());
+    document.getElementById('csvInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      e.target.value = '';
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const res = await api.post('/children/import', formData);
+        showToast(res.message, res.data.errors.length ? 'warning' : 'success');
+        if (res.data.errors.length) {
+          console.warn('CSV import errors:', res.data.errors);
+        }
+        loadList();
+      } catch (err) {
+        showToast(err.message || 'CSV import failed', 'error');
+      }
+    });
+
+    // --- Growth tab ----------------------------------------------------------
+    async function loadGrowthTab() {
+      const [records, insights, healthInsights] = await Promise.all([
+        fetchGrowthRecords(currentChild._id),
+        fetchGrowthInsights(currentChild._id),
+        fetchInsights(currentChild._id),
+      ]);
+      currentRecords = records;
+
+      renderInsights(document.getElementById('insightsContainer'), healthInsights);
+
+      document.getElementById('growthAlerts').innerHTML = alertBannerHtml(insights.alerts);
+      document.getElementById('detailScoreValue').textContent = insights.healthScore ?? '—';
+      if (insights.healthScore !== null) renderScoreDonut('detailScoreRing', insights.healthScore);
+      document.getElementById('predictedHeight').textContent = insights.prediction ? `${insights.prediction.predictedHeightCm} cm` : '—';
+      document.getElementById('growthVelocity').textContent = insights.velocity ? `${insights.velocity.heightCmPerMonth} cm/mo` : '—';
+
+      renderActiveChart('height');
+    }
+
+    function renderActiveChart(type) {
+      if (!currentRecords.length) return;
+      const map = {
+        height: () => renderHeightChart('growthChart', currentRecords),
+        weight: () => renderWeightChart('growthChart', currentRecords),
+        bmi: () => renderBmiTrendChart('growthChart', currentRecords),
+        head: () => renderHeadCircumferenceChart('growthChart', currentRecords),
+        percentile: () => renderPercentileChart('growthChart', currentRecords),
+      };
+      map[type]?.();
+    }
+
+    document.getElementById('chartTabs').addEventListener('click', (e) => {
+      const btn = e.target.closest('.chart-tab');
+      if (!btn) return;
+      document.querySelectorAll('.chart-tab').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderActiveChart(btn.dataset.chart);
+    });
+
+    document.getElementById('addGrowthBtn').addEventListener('click', () => {
+      openAddGrowthModal(currentChild._id, () => { showToast('Refreshing chart...', 'info', { duration: 1500 }); loadGrowthTab(); });
+    });
+
+    // --- Vaccinations tab ------------------------------------------------------
+    async function loadVaccinationsTab() {
+      const tbody = document.getElementById('vaccinationsBody');
+      renderSkeletonRows(tbody, 4, 5);
+      const vaccinations = await fetchVaccinations(currentChild._id);
+      tbody.innerHTML = vaccinations.length
+        ? vaccinations.map(vaccinationRowHtml).join('')
+        : '<tr><td colspan="5" class="text-center text-muted">No vaccinations scheduled.</td></tr>';
+    }
+
+    document.getElementById('vaccinationsBody').addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-action]');
+      if (!btn) return;
+      const { action, id } = btn.dataset;
+      if (action === 'complete') {
+        await markVaccinationComplete(id);
+        showToast('Marked as completed', 'success');
+      } else if (action === 'delete') {
+        if (!confirm('Remove this vaccination entry?')) return;
+        await deleteVaccination(id);
+        showToast('Vaccination removed', 'success');
+      }
+      loadVaccinationsTab();
+    });
+
+    document.getElementById('addVaccineBtn').addEventListener('click', () => {
+      openAddVaccineModal(currentChild._id, loadVaccinationsTab);
+    });
+
+    // --- Milestones tab -----------------------------------------------------
+    async function loadMilestonesTab() {
+      const container = document.getElementById('milestonesContainer');
+      container.innerHTML = '<p class="text-muted text-sm">Loading...</p>';
+      const res = await api.get(`/children/${currentChild._id}/milestones`);
+      const milestones = res.data.milestones;
+      const byDomain = {};
+      milestones.forEach((m) => { (byDomain[m.domain] ||= []).push(m); });
+
+      const domainIcons = { 'Motor Skills': 'fa-person-walking', 'Language': 'fa-comment', 'Social Skills': 'fa-people-group', 'Cognitive Skills': 'fa-brain' };
+      container.innerHTML = Object.entries(byDomain).map(([domain, items]) => `
+        <div class="milestone-domain-group">
+          <h4 class="mb-2"><i class="fa-solid ${domainIcons[domain] || 'fa-star'} text-primary" style="margin-right:8px;"></i>${domain}</h4>
+          ${items.map((m) => `
+            <div class="milestone-item ${m.achieved ? 'achieved' : ''}" data-id="${m._id}">
+              <div class="milestone-item__check"><i class="fa-solid fa-check"></i></div>
+              <div class="flex-1">
+                <div class="milestone-item__title">${m.title}</div>
+                <div class="text-xs text-muted">Typically by ${m.expectedAgeMonths} months</div>
+              </div>
+              ${!m.achieved ? `<button class="btn btn-sm btn-secondary" data-mark="${m._id}">Mark achieved</button>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      `).join('') || '<p class="text-muted text-sm">No milestones to show.</p>';
+
+      container.querySelectorAll('[data-mark]').forEach((btn) => {
+        btn.addEventListener('click', async (e) => {
+          await api.patch(`/milestones/${btn.dataset.mark}/achieve`);
+          celebrate(e.currentTarget.closest('.milestone-item'));
+          showToast('Milestone achieved 🎉', 'success');
+          setTimeout(loadMilestonesTab, 700);
+        });
+      });
+    }
+
+    // --- Nutrition tab -------------------------------------------------------
+    let currentNutritionLog = null;
+    async function loadNutritionTab() {
+      const { log, suggestions } = await fetchDailyNutrition(currentChild._id);
+      currentNutritionLog = log;
+      document.getElementById('totalCalories').textContent = log.totalCalories ?? 0;
+      document.getElementById('totalProtein').textContent = `${log.totalProteinG ?? 0}g`;
+      document.getElementById('waterInput').value = log.waterIntakeMl || '';
+      document.getElementById('nutritionSuggestions').innerHTML = suggestions.map((s) => `<div class="badge badge-info mb-2" style="display:block; width:fit-content;">${s}</div>`).join('');
+      document.getElementById('mealsList').innerHTML = log.meals?.length
+        ? log.meals.map(mealRowHtml).join('')
+        : '<p class="text-muted text-sm">No meals logged today.</p>';
+    }
+
+    document.getElementById('addMealBtn').addEventListener('click', () => {
+      openAddMealModal(currentChild._id, loadNutritionTab);
+    });
+
+    document.getElementById('waterInput').addEventListener('change', async (e) => {
+      if (!currentNutritionLog?._id) { showToast('Log a meal first to create today\'s entry', 'warning'); return; }
+      await updateWaterIntake(currentNutritionLog._id, Number(e.target.value) || 0);
+      showToast('Water intake updated', 'success');
+    });
+
+    // --- Sleep tab -----------------------------------------------------------
+    async function loadSleepTab() {
+      const tbody = document.getElementById('sleepBody');
+      renderSkeletonRows(tbody, 4, 5);
+      const logs = await fetchSleepLogs(currentChild._id, 14);
+      tbody.innerHTML = logs.length ? logs.map(sleepRowHtml).join('') : '<tr><td colspan="5" class="text-center text-muted">No sleep logs yet.</td></tr>';
+    }
+
+    document.getElementById('sleepBody').addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-action="delete"]');
+      if (!btn) return;
+      if (!confirm('Delete this sleep log?')) return;
+      await deleteSleepLog(btn.dataset.id);
+      showToast('Sleep log removed', 'success');
+      loadSleepTab();
+    });
+
+    document.getElementById('addSleepBtn').addEventListener('click', () => {
+      openAddSleepModal(currentChild._id, loadSleepTab);
+    });
+
+    // --- Profile tab ---------------------------------------------------------
+    function loadProfileTab() {
+      const c = currentChild;
+      document.getElementById('profileBasic').innerHTML = `
+        <div class="info-list__row"><span class="info-list__label">Full name</span><span class="info-list__value">${c.name}</span></div>
+        <div class="info-list__row"><span class="info-list__label">Gender</span><span class="info-list__value">${c.gender}</span></div>
+        <div class="info-list__row"><span class="info-list__label">Date of birth</span><span class="info-list__value">${formatDate(c.dateOfBirth)}</span></div>
+        <div class="info-list__row"><span class="info-list__label">Birth weight</span><span class="info-list__value">${c.birthWeightKg ? c.birthWeightKg + ' kg' : '—'}</span></div>
+        <div class="info-list__row"><span class="info-list__label">Birth height</span><span class="info-list__value">${c.birthHeightCm ? c.birthHeightCm + ' cm' : '—'}</span></div>
+      `;
+      document.getElementById('profileMedical').innerHTML = `
+        <div class="info-list__row"><span class="info-list__label">Blood group</span><span class="info-list__value">${c.bloodGroup}</span></div>
+      `;
+      document.getElementById('profileAllergies').innerHTML = c.allergies?.length
+        ? c.allergies.map((a) => `<span class="tag danger">${a}</span>`).join('') : '<span class="text-muted text-sm">None recorded</span>';
+      document.getElementById('profileConditions').innerHTML = c.medicalConditions?.length
+        ? c.medicalConditions.map((m) => `<span class="tag">${m}</span>`).join('') : '<span class="text-muted text-sm">None recorded</span>';
+      document.getElementById('profileEmergency').innerHTML = `
+        <div class="info-list__row"><span class="info-list__label">Name</span><span class="info-list__value">${c.emergencyContact?.name || '—'}</span></div>
+        <div class="info-list__row"><span class="info-list__label">Phone</span><span class="info-list__value">${c.emergencyContact?.phone || '—'}</span></div>
+      `;
+      document.getElementById('profileDoctor').innerHTML = `
+        <div class="info-list__row"><span class="info-list__label">Doctor</span><span class="info-list__value">${c.doctor?.name || '—'}</span></div>
+        <div class="info-list__row"><span class="info-list__label">Phone</span><span class="info-list__value">${c.doctor?.phone || '—'}</span></div>
+      `;
+    }
+
+    // --- Deep link support: /children.html#<childId> ---------------------------
+    await loadList();
+    const hashId = window.location.hash.replace('#', '');
+    if (hashId) openDetail(hashId);
+  </script>
+</body>
+</html>
