@@ -200,29 +200,5 @@ This project is licensed under the [MIT License](./LICENSE).
 
 See [CHANGELOG.md](./CHANGELOG.md) for the full development history.
 
----
-
-## 🚢 Publishing to GitHub
-
-1. **Create the repository** on GitHub (github.com → "+" → New repository). Name it `child-growth-tracker`, leave it empty (no README/license/gitignore — this project already has all three), and copy the URL it gives you.
-
-2. **Replace the `OWNER` placeholder.** A few files reference `github.com/OWNER/child-growth-tracker` as a placeholder — find-and-replace `OWNER` with your actual GitHub username in:
-   - `README.md` (the CI badge near the top)
-   - `package.json` (`homepage`, `bugs.url`, `repository.url`)
-   - `.github/ISSUE_TEMPLATE/config.yml`
-
-3. **Push it up**, from the project root:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git branch -M main
-   git remote add origin https://github.com/<your-username>/child-growth-tracker.git
-   git push -u origin main
-   ```
-
-4. **Double-check `.env` didn't get committed.** Run `git status` before your first commit and confirm `backend/.env` is *not* listed (it's git-ignored, but worth a sanity check since it holds your database credentials).
-
-5. **On GitHub**, go to the repo's **Settings → General** and add a description + topics (e.g. `nodejs`, `express`, `mongodb`, `healthcare`, `javascript`) so it's discoverable. The CI workflow in `.github/workflows/ci.yml` will run automatically on your first push and on every future PR.
 
 
